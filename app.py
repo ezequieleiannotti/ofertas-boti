@@ -64,13 +64,10 @@ def auth_callback():
                                  tokens=token_response, 
                                  offers=get_demo_offers())
         
-        # PRODUCCIÓN → usar API pública real
-        ofertas = buscar_ofertas("celular")
-        
-        # Si no hay ofertas, usar demo como fallback
-        if not ofertas:
-            ofertas = get_demo_offers()
-            token_response["fallback_used"] = True
+        # PRODUCCIÓN → usar demo por ahora (API bloqueada)
+        ofertas = get_demo_offers()
+        token_response["using_demo"] = True
+        token_response["reason"] = "API blocked by MercadoLibre"
             
         return render_template("success.html", tokens=token_response, offers=ofertas)
         
