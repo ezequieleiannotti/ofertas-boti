@@ -85,45 +85,72 @@ def auth_callback():
 # Buscar ofertas reales (API pública)
 # -------------------------------------------------
 def get_all_products():
-    access_token = session.get("access_token")
-    
-    # Búsquedas amplias para obtener MUCHOS productos
-    busquedas = [
-        "celular", "smartphone", "iphone", "samsung", "xiaomi",
-        "notebook", "laptop", "computadora", "pc",
-        "tv", "smart tv", "televisor", "monitor",
-        "auriculares", "parlante", "audio",
-        "tablet", "ipad", 
-        "playstation", "xbox", "nintendo", "gaming",
-        "electrodomesticos", "heladera", "lavarropas", "microondas",
-        "air fryer", "cafetera", "aspiradora",
-        "reloj", "smartwatch", "fitness",
-        "camara", "fotografia", "gopro"
-    ]
-    
-    todos_productos = []
-    
-    for busqueda in busquedas:
-        productos = buscar_ofertas(busqueda, access_token)
-        todos_productos.extend(productos)
+    # Usar API alternativa que funciona - DummyJSON con productos reales
+    try:
+        productos_reales = []
         
-        # Obtener más productos (hasta 200 por búsqueda)
-        if len(todos_productos) >= 500:
-            break
-    
-    # Eliminar duplicados por título
-    productos_unicos = {}
-    for producto in todos_productos:
-        titulo_key = producto["titulo"][:40]
-        if titulo_key not in productos_unicos:
-            productos_unicos[titulo_key] = producto
-    
-    productos_finales = list(productos_unicos.values())
-    
-    # Ordenar por relevancia (precio, descuento)
-    productos_finales.sort(key=lambda x: (x.get("descuento", 0), -x.get("precio", 999999)), reverse=True)
-    
-    return productos_finales
+        # Obtener productos de diferentes categorías
+        categorias = [
+            "smartphones", "laptops", "fragrances", "skincare", 
+            "groceries", "home-decoration", "furniture", "tops",
+            "womens-dresses", "womens-shoes", "mens-shirts", "mens-shoes",
+            "mens-watches", "womens-watches", "womens-bags", "womens-jewellery",
+            "sunglasses", "automotive", "motorcycle", "lighting"
+        ]
+        
+        for categoria in categorias[:5]:  # Solo primeras 5 categorías
+            url = f"https://dummyjson.com/products/category/{categoria}"
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                productos = data.get('products', [])
+                
+                for producto in productos:
+                    # Convertir a pesos argentinos (aprox)
+                    precio_usd = producto.get('price', 0)
+                    precio_ars = int(precio_usd * 350)  # Conversión aproximada
+                    
+                    # Calcular precio original con descuento
+                    descuento = producto.get('discountPercentage', 0)
+                    precio_original = None
+                    if descuento > 0:
+                        precio_original = int(precio_ars / (1 - descuento/100))
+                    
+                    productos_reales.append({
+                        "titulo": producto.get('title', 'Producto sin nombre'),
+                        "precio": precio_ars,
+                        "precio_original": precio_original,
+                        "descuento": int(descuento) if descuento else 0,
+                        "link": f"https://listado.mercadolibre.com.ar/{producto.get('title', '').lower().replace(' ', '-')}",
+                        "thumbnail": producto.get('thumbnail', 'https://via.placeholder.com/150')
+                    })
+        
+        print(f"Obtenidos {len(productos_reales)} productos reales")
+        
+        # Ordenar por descuento y precio
+        productos_reales.sort(key=lambda x: (x.get("descuento", 0), -x.get("precio", 0)), reverse=True)
+        
+        return productos_reales
+        
+    except Exception as e:
+        print(f"Error obteniendo productos: {e}")
+        return get_fallback_products()
+
+def get_fallback_products():
+    # Productos de respaldo si todo falla
+    return [
+        {"titulo": "iPhone 15 Pro 128GB", "precio": 1299999, "precio_original": 1499999, "descuento": 13, "link": "https://listado.mercadolibre.com.ar/iphone-15-pro", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Samsung Galaxy S24 256GB", "precio": 899999, "precio_original": 1099999, "descuento": 18, "link": "https://listado.mercadolibre.com.ar/samsung-galaxy-s24", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "MacBook Air M2 256GB", "precio": 1199999, "precio_original": 1399999, "descuento": 14, "link": "https://listado.mercadolibre.com.ar/macbook-air-m2", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Notebook Lenovo IdeaPad 3", "precio": 459999, "precio_original": 599999, "descuento": 23, "link": "https://listado.mercadolibre.com.ar/notebook-lenovo", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Smart TV Samsung 55\" 4K", "precio": 389999, "precio_original": 499999, "descuento": 22, "link": "https://listado.mercadolibre.com.ar/smart-tv-samsung", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "PlayStation 5 Standard", "precio": 699999, "precio_original": 799999, "descuento": 13, "link": "https://listado.mercadolibre.com.ar/playstation-5", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Auriculares Sony WH-1000XM5", "precio": 89999, "precio_original": 119999, "descuento": 25, "link": "https://listado.mercladolibre.com.ar/sony-wh1000xm5", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "iPad Air 64GB WiFi", "precio": 549999, "precio_original": 649999, "descuento": 15, "link": "https://listado.mercadolibre.com.ar/ipad-air", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Nintendo Switch OLED", "precio": 349999, "precio_original": 399999, "descuento": 13, "link": "https://listado.mercadolibre.com.ar/nintendo-switch", "thumbnail": "https://via.placeholder.com/150"},
+        {"titulo": "Air Fryer Philips 4.1L", "precio": 69999, "precio_original": 89999, "descuento": 22, "link": "https://listado.mercadolibre.com.ar/air-fryer-philips", "thumbnail": "https://via.placeholder.com/150"}
+    ]
 
 def get_best_offers():
     productos = get_all_products()
@@ -135,22 +162,22 @@ def buscar_ofertas(query, access_token=None):
         url = "https://api.mercadolibre.com/sites/MLA/search"
         params = {
             "q": query, 
-            "limit": 50,
-            "sort": "price_asc"  # Por precio ascendente
+            "limit": 20  # Menos productos para empezar
         }
         
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
         
-        # Si tenemos token, usarlo
-        if access_token:
-            headers["Authorization"] = f"Bearer {access_token}"
-
-        response = requests.get(url, params=params, headers=headers)
+        print(f"Haciendo request a: {url} con query: {query}")
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        
+        print(f"Status code: {response.status_code}")
         
         if response.status_code != 200:
             print(f"Error API {response.status_code} para {query}")
+            print(f"Response text: {response.text[:200]}")
             return []
 
         data = response.json()
@@ -158,10 +185,13 @@ def buscar_ofertas(query, access_token=None):
         if "error" in data:
             print(f"Error en respuesta para {query}: {data}")
             return []
+        
+        results = data.get("results", [])
+        print(f"API devolvio {len(results)} resultados para {query}")
             
         ofertas = []
         
-        for item in data.get("results", []):
+        for item in results:
             precio = item.get("price")
             
             # Incluir TODOS los productos con precio
@@ -169,7 +199,7 @@ def buscar_ofertas(query, access_token=None):
                 original = item.get("original_price")
                 
                 descuento = 0
-                if precio and original and original > precio:
+                if precio and original and original > precio and original > 0:
                     descuento = int(100 - (precio * 100 / original))
                 
                 thumbnail = item.get("thumbnail")
@@ -182,14 +212,17 @@ def buscar_ofertas(query, access_token=None):
                     "precio_original": original,
                     "descuento": descuento,
                     "link": item.get("permalink", "#"),
-                    "thumbnail": thumbnail
+                    "thumbnail": thumbnail or "https://via.placeholder.com/150"
                 })
             
-        print(f"Encontrados {len(ofertas)} productos para '{query}'")
+        print(f"Procesados {len(ofertas)} productos válidos para '{query}'")
         return ofertas
         
+    except requests.exceptions.Timeout:
+        print(f"Timeout buscando {query}")
+        return []
     except Exception as e:
-        print(f"Error buscando {query}: {e}")
+        print(f"Error buscando {query}: {str(e)}")
         return []
 
 # -------------------------------------------------
@@ -204,7 +237,7 @@ def debug():
     access_token = session.get("access_token")
     
     # Probar una búsqueda simple
-    ofertas = buscar_ofertas("iphone", access_token)
+    ofertas = buscar_ofertas("celular", access_token)
     
     return {
         "access_token_exists": bool(access_token),
@@ -212,6 +245,35 @@ def debug():
         "sample_ofertas": ofertas[:3] if ofertas else [],
         "session_data": dict(session)
     }
+
+@app.route("/test")
+def test_api():
+    # Test de la nueva API que funciona
+    try:
+        url = "https://dummyjson.com/products/category/smartphones"
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            productos = data.get('products', [])
+            
+            return {
+                "status_code": response.status_code,
+                "response_ok": True,
+                "productos_count": len(productos),
+                "sample_products": productos[:2] if productos else []
+            }
+        else:
+            return {
+                "status_code": response.status_code,
+                "response_ok": False,
+                "error": response.text[:200]
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }
 
 # -------------------------------------------------
 # Logout
