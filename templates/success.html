@@ -1,35 +1,195 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Ofertas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ofertas Encontradas - Ofertas Boti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .offers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .offer-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .offer-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .offer-image {
+            width: 100%;
+            max-width: 150px;
+            height: 150px;
+            object-fit: contain;
+            margin: 0 auto 1rem;
+            display: block;
+            border-radius: 10px;
+        }
+        
+        .offer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        
+        .price-section {
+            margin-bottom: 1rem;
+        }
+        
+        .current-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00a650;
+        }
+        
+        .original-price {
+            color: #999;
+            text-decoration: line-through;
+            margin-left: 10px;
+        }
+        
+        .discount {
+            background: #ff6b35;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .offer-btn {
+            background: #3483fa;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            transition: background 0.3s ease;
+            width: 100%;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .offer-btn:hover {
+            background: #2968c8;
+        }
+        
+        .no-offers {
+            text-align: center;
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .debug-section {
+            margin-top: 3rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .debug-section h3 {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .debug-section pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
-    <h1>🎉 Ofertas Encontradas</h1>
+    <div class="header">
+        <h1>🎉 Ofertas Encontradas</h1>
+    </div>
 
     {% if offers %}
-        {% for o in offers %}
-            <div style="border:1px solid #ddd;padding:10px;margin:10px;">
-                <img src="{{ o.thumbnail }}" width="120"><br>
-                <strong>{{ o.titulo }}</strong><br>
-                💲 {{ o.precio }}<br>
-
-                {% if o.precio_original %}
-                <del>${{ o.precio_original }}</del><br>
-                {% endif %}
-
-                {% if o.descuento > 0 %}
-                    🔥 Descuento: {{ o.descuento }}%
-                {% endif %}
-                <br><br>
-                <a href="{{ o.link }}" target="_blank">Ver oferta</a>
-            </div>
-        {% endfor %}
+        <div class="offers-grid">
+            {% for o in offers %}
+                <div class="offer-card">
+                    <img src="{{ o.thumbnail }}" alt="{{ o.titulo }}" class="offer-image">
+                    <div class="offer-title">{{ o.titulo }}</div>
+                    
+                    <div class="price-section">
+                        <span class="current-price">${{ "{:,.0f}".format(o.precio) }}</span>
+                        {% if o.precio_original %}
+                            <span class="original-price">${{ "{:,.0f}".format(o.precio_original) }}</span>
+                        {% endif %}
+                        
+                        {% if o.descuento > 0 %}
+                            <div class="discount">🔥 {{ o.descuento }}% OFF</div>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ o.link }}" target="_blank" class="offer-btn">
+                        Ver oferta 🛒
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
-        <p>No se encontraron productos.</p>
+        <div class="no-offers">
+            <h2>😔 No se encontraron productos</h2>
+            <p>Intenta con otra búsqueda o vuelve más tarde.</p>
+        </div>
     {% endif %}
 
-    <br><br>
-    <h3>Ver tokens (debug)</h3>
-    <pre>{{ tokens }}</pre>
+    <div class="debug-section">
+        <h3>🔍 Ver tokens (debug)</h3>
+        <pre>{{ tokens }}</pre>
+    </div>
 </body>
 </html>

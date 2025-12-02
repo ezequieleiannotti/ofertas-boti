@@ -1,12 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Ofertas Boti</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ofertas Boti - Encuentra las mejores ofertas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        .login-btn {
+            background: #3483fa;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .login-btn:hover {
+            background: #2968c8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 131, 250, 0.3);
+        }
+        
+        .features {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            color: #555;
+        }
+        
+        .feature-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body>
-    <h1>🔍 Buscar Ofertas</h1>
-    <a href="{{ login_url }}">
-        <button style="font-size:18px;padding:10px;">Ingresar con MercadoLibre</button>
-    </a>
+    <div class="container">
+        <div class="logo">🛒</div>
+        <h1>Ofertas Boti</h1>
+        <p class="subtitle">Encuentra las mejores ofertas de MercadoLibre</p>
+        
+        <a href="{{ login_url }}" class="login-btn">
+            🔐 Ingresar con MercadoLibre
+        </a>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">🔍</span>
+                <span>Busca productos con descuentos</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">💰</span>
+                <span>Compara precios originales</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⚡</span>
+                <span>Acceso rápido y seguro</span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
