@@ -1,23 +1,20 @@
-from flask import Flask, request, redirect, jsonify, render_template
+from flask import Flask, request, redirect, jsonify, render_template 
 import requests
-import os
 
 app = Flask(__name__)
 
 CLIENT_ID = "1862062842480219"
 CLIENT_SECRET = "wIz7tlOGXaDY9ciyTHKYfQmiI256j6wJ"
 
-import os
-
-# URL de producción para Render.com (cambiar por tu URL real)
-PROD_REDIRECT_URI = "https://tu-app.onrender.com/auth/callback"
+PROD_REDIRECT_URI = "https://ofertas-boti.onrender.com/auth/callback"  
+# ⚠️ Render te va a dar el dominio final, actualizalo después.
 
 # -----------------------------------------
 # Detectar si es LOCAL vs PRODUCCIÓN
 # -----------------------------------------
 def is_development():
-    # Render.com setea PORT como variable de entorno
-    return os.getenv("PORT") is None
+    host = request.host.split(":")[0]
+    return host in ["127.0.0.1", "localhost"]
 
 
 # -----------------------------------------
@@ -60,19 +57,19 @@ def auth_callback():
         "https://api.mercadolibre.com/oauth/token", data=data
     ).json()
 
-    # ❗ PRODUCCIÓN → usar API pública real (NO TOKEN)
+    # PRODUCCIÓN → usar API pública real
     ofertas = buscar_ofertas("ofertas")
 
     return render_template("success.html", tokens=token_response, offers=ofertas)
 
 
 # -----------------------------------------
-# Buscador real sin token (API pública)
+# Buscador real usando API pública
 # -----------------------------------------
 def buscar_ofertas(query):
 
     url = "https://api.mercadolibre.com/sites/MLA/search"
-    params = {"q": query, "sort": "price_asc"}  # ordena mejores precios
+    params = {"q": query, "sort": "price_asc"}
 
     response = requests.get(url, params=params)
     data = response.json()
@@ -136,5 +133,5 @@ def public_test():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(port=5000, debug=True)
+
