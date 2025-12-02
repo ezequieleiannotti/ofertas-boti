@@ -148,12 +148,23 @@
         
         .product-image {
             width: 100%;
-            max-width: 100px;
-            height: 100px;
+            max-width: 120px;
+            height: 120px;
             object-fit: contain;
             margin: 0 auto 0.8rem;
             display: block;
             border-radius: 8px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s ease;
+        }
+        
+        .product-image:hover {
+            transform: scale(1.05);
+        }
+        
+        .product-image:error {
+            background: #f8f9fa url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="%23999"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>') center center no-repeat;
         }
         
         .product-title {
@@ -293,7 +304,11 @@
                             <div class="discount-badge">🔥 {{ product.descuento }}% OFF</div>
                         {% endif %}
                         
-                        <img src="{{ product.thumbnail }}" alt="{{ product.titulo }}" class="product-image">
+                        <img src="{{ product.thumbnail }}" 
+                             alt="{{ product.titulo }}" 
+                             class="product-image"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/200x200/f0f0f0/666?text=Sin+Imagen'; this.onerror=null;">
                         <div class="product-title">{{ product.titulo }}</div>
                         
                         <div class="price-section">

@@ -133,11 +133,14 @@ def get_all_products():
     # Usar API ORIGINAL de MercadoLibre con diferentes estrategias
     access_token = session.get("access_token")
     
-    # Búsquedas en MercadoLibre Argentina
+    # Búsquedas en MercadoLibre Argentina - incluir categorías con descuentos altos
     busquedas = [
+        "perfume", "fragancia", "jadore", "chanel", "dior",  # Perfumes tienen descuentos altos
+        "cosmeticos", "maquillaje", "crema", "skincare",
         "celular", "smartphone", "iphone", "samsung", 
         "notebook", "laptop", "tv", "smart tv",
-        "auriculares", "tablet", "playstation", "xbox"
+        "auriculares", "tablet", "playstation", "xbox",
+        "ropa", "zapatillas", "remera", "jean"
     ]
     
     todos_productos = []
@@ -283,17 +286,35 @@ def procesar_resultados_ml(results):
         if precio and original and original > precio:
             descuento = int(100 - (precio * 100 / original))
         
+        # Mejorar manejo de imágenes
         thumbnail = item.get("thumbnail")
-        if thumbnail and thumbnail.startswith("http://"):
-            thumbnail = thumbnail.replace("http://", "https://")
+        if thumbnail:
+            # Convertir a HTTPS
+            if thumbnail.startswith("http://"):
+                thumbnail = thumbnail.replace("http://", "https://")
+            # Mejorar calidad de imagen
+            if "mlstatic.com" in thumbnail:
+                # Cambiar tamaño de imagen para mejor calidad
+                thumbnail = thumbnail.replace("-I.jpg", "-O.jpg").replace("-V.jpg", "-O.jpg")
+        else:
+            thumbnail = "https://via.placeholder.com/200x200/f0f0f0/666?text=Sin+Imagen"
+        
+        # Asegurar que el link sea directo al producto
+        link = item.get("permalink", "#")
+        if link and link != "#":
+            # Limpiar parámetros innecesarios del link
+            if "?" in link:
+                link = link.split("?")[0]
         
         productos.append({
             "titulo": item.get("title", "Sin título"),
             "precio": int(precio),
             "precio_original": int(original) if original else None,
             "descuento": descuento,
-            "link": item.get("permalink", "#"),
-            "thumbnail": thumbnail or "https://via.placeholder.com/150"
+            "link": link,
+            "thumbnail": thumbnail,
+            "id": item.get("id", ""),
+            "condition": item.get("condition", "unknown")
         })
     
     return productos
@@ -417,32 +438,50 @@ def test_api():
         "estrategias": {}
     }
     
-    # Probar estrategia 1: Con token
+    # Probar con perfumes (suelen tener descuentos altos)
     if access_token:
-        productos = intentar_busqueda_con_token("iphone", access_token)
+        productos = intentar_busqueda_con_token("perfume", access_token)
         resultados["estrategias"]["con_token"] = {
             "funciona": len(productos) > 0,
             "productos_count": len(productos),
-            "sample": productos[:1] if productos else []
+            "sample": productos[:2] if productos else [],
+            "descuentos": [p.get('descuento', 0) for p in productos[:5]]
         }
     
-    # Probar estrategia 2: Pública
-    productos = intentar_busqueda_publica("iphone")
-    resultados["estrategias"]["publica"] = {
-        "funciona": len(productos) > 0,
-        "productos_count": len(productos),
-        "sample": productos[:1] if productos else []
-    }
-    
-    # Probar estrategia 3: Alternativa
-    productos = intentar_busqueda_alternativa("iphone")
-    resultados["estrategias"]["alternativa"] = {
-        "funciona": len(productos) > 0,
-        "productos_count": len(productos),
-        "sample": productos[:1] if productos else []
-    }
-    
     return resultados
+
+@app.route("/ofertas")
+def solo_ofertas():
+    """Ruta que muestra solo productos con descuentos altos"""
+    access_token = session.get("access_token")
+    
+    if not access_token:
+        return redirect(url_for("login_page"))
+    
+    # Buscar productos con descuentos altos
+    productos_con_descuento = []
+    
+    busquedas_descuentos = ["perfume", "cosmeticos", "ropa", "zapatillas"]
+    
+    for busqueda in busquedas_descuentos:
+        productos = buscar_ofertas_ml(busqueda, access_token)
+        # Solo productos con descuento > 15%
+        productos_filtrados = [p for p in productos if p.get('descuento', 0) > 15]
+        productos_con_descuento.extend(productos_filtrados)
+    
+    # Ordenar por descuento descendente
+    productos_con_descuento.sort(key=lambda x: x.get('descuento', 0), reverse=True)
+    
+    return render_template("products.html", 
+                         products=productos_con_descuento[:50], 
+                         total_products=len(productos_con_descuento),
+                         filtered_count=len(productos_con_descuento[:50]),
+                         current_filters={
+                             'descuento_min': 15,
+                             'descuento_max': 100,
+                             'precio': '',
+                             'categoria': 'ofertas'
+                         })
 
 # -------------------------------------------------
 # Logout
