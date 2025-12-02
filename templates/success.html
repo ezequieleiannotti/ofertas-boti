@@ -1,50 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ofertas de Mercado Libre</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .oferta { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
-        .titulo { font-weight: bold; color: #333; }
-        .precio { color: #00a650; font-size: 18px; font-weight: bold; }
-        .descuento { background: #ff6600; color: white; padding: 2px 8px; border-radius: 3px; }
-        .original { text-decoration: line-through; color: #999; }
-        img { max-width: 100px; float: left; margin-right: 15px; }
-        .link { color: #3483fa; text-decoration: none; }
-    </style>
+    <title>Ofertas</title>
 </head>
 <body>
     <h1>🎉 Ofertas Encontradas</h1>
-    
-    {% if offers and offers|length > 0 %}
-        {% for oferta in offers %}
-        <div class="oferta">
-            {% if oferta.thumbnail %}
-                <img src="{{ oferta.thumbnail }}" alt="Producto">
-            {% endif %}
-            <div class="titulo">{{ oferta.titulo }}</div>
-            <div>
-                <span class="precio">${{ "%.2f"|format(oferta.precio) }}</span>
-                {% if oferta.precio_original and oferta.descuento > 0 %}
-                    <span class="original">${{ "%.2f"|format(oferta.precio_original) }}</span>
-                    <span class="descuento">{{ oferta.descuento }}% OFF</span>
-                {% else %}
-                    <span style="color: #666;">Precio actual</span>
+
+    {% if offers %}
+        {% for o in offers %}
+            <div style="border:1px solid #ddd;padding:10px;margin:10px;">
+                <img src="{{ o.thumbnail }}" width="120"><br>
+                <strong>{{ o.titulo }}</strong><br>
+                💲 {{ o.precio }}<br>
+
+                {% if o.precio_original %}
+                <del>${{ o.precio_original }}</del><br>
                 {% endif %}
+
+                {% if o.descuento > 0 %}
+                    🔥 Descuento: {{ o.descuento }}%
+                {% endif %}
+                <br><br>
+                <a href="{{ o.link }}" target="_blank">Ver oferta</a>
             </div>
-            <a href="{{ oferta.link }}" target="_blank" class="link">Ver producto →</a>
-            <div style="clear: both;"></div>
-        </div>
         {% endfor %}
     {% else %}
         <p>No se encontraron productos.</p>
-        <p>Debug: offers = {{ offers }}</p>
     {% endif %}
-    
-    <hr>
-    <details>
-        <summary>Ver tokens (debug)</summary>
-        <pre>{{ tokens }}</pre>
-    </details>
+
+    <br><br>
+    <h3>Ver tokens (debug)</h3>
+    <pre>{{ tokens }}</pre>
 </body>
 </html>
