@@ -135,12 +135,14 @@ def get_all_products():
     
     # Búsquedas en MercadoLibre Argentina - incluir categorías con descuentos altos
     busquedas = [
-        "perfume", "fragancia", "jadore", "chanel", "dior",  # Perfumes tienen descuentos altos
+        "anteojos", "lentes", "gafas", "sol",  # Anteojos como el de 65%
+        "perfume", "fragancia", "jadore", "chanel", "dior",
         "cosmeticos", "maquillaje", "crema", "skincare",
-        "celular", "smartphone", "iphone", "samsung", 
-        "notebook", "laptop", "tv", "smart tv",
-        "auriculares", "tablet", "playstation", "xbox",
-        "ropa", "zapatillas", "remera", "jean"
+        "reloj", "pulsera", "collar", "anillo",  # Accesorios
+        "cartera", "billetera", "mochila",
+        "zapatillas", "zapatos", "botas",
+        "remera", "camisa", "pantalon", "jean",
+        "celular", "auriculares", "tablet"
     ]
     
     todos_productos = []
@@ -438,14 +440,22 @@ def test_api():
         "estrategias": {}
     }
     
-    # Probar con perfumes (suelen tener descuentos altos)
+    # Probar con anteojos (como tu ejemplo de 65%)
     if access_token:
-        productos = intentar_busqueda_con_token("perfume", access_token)
-        resultados["estrategias"]["con_token"] = {
+        productos = intentar_busqueda_con_token("anteojos sol", access_token)
+        resultados["estrategias"]["anteojos"] = {
             "funciona": len(productos) > 0,
             "productos_count": len(productos),
             "sample": productos[:2] if productos else [],
             "descuentos": [p.get('descuento', 0) for p in productos[:5]]
+        }
+        
+        # Probar con perfumes
+        productos_perfume = intentar_busqueda_con_token("perfume", access_token)
+        resultados["estrategias"]["perfume"] = {
+            "funciona": len(productos_perfume) > 0,
+            "productos_count": len(productos_perfume),
+            "descuentos": [p.get('descuento', 0) for p in productos_perfume[:5]]
         }
     
     return resultados
@@ -461,7 +471,12 @@ def solo_ofertas():
     # Buscar productos con descuentos altos
     productos_con_descuento = []
     
-    busquedas_descuentos = ["perfume", "cosmeticos", "ropa", "zapatillas"]
+    busquedas_descuentos = [
+        "anteojos", "lentes sol", "gafas",  # Como el ejemplo de 65%
+        "perfume", "cosmeticos", "maquillaje",
+        "reloj", "pulsera", "collar",  # Accesorios con descuentos altos
+        "zapatillas", "zapatos", "ropa"
+    ]
     
     for busqueda in busquedas_descuentos:
         productos = buscar_ofertas_ml(busqueda, access_token)
@@ -481,6 +496,46 @@ def solo_ofertas():
                              'descuento_max': 100,
                              'precio': '',
                              'categoria': 'ofertas'
+                         })
+
+@app.route("/mega-ofertas")
+def mega_ofertas():
+    """Ruta para ofertas extremas (50%+ descuento) como los anteojos de 65%"""
+    access_token = session.get("access_token")
+    
+    if not access_token:
+        return redirect(url_for("login_page"))
+    
+    # Buscar productos con descuentos extremos
+    productos_mega_descuento = []
+    
+    # Categorías que suelen tener descuentos extremos
+    busquedas_extremas = [
+        "anteojos sol", "lentes", "gafas infinit",  # Como tu ejemplo de 65%
+        "perfume descuento", "fragancia oferta",
+        "reloj oferta", "pulsera descuento",
+        "zapatillas liquidacion", "ropa outlet",
+        "cosmeticos oferta", "maquillaje descuento"
+    ]
+    
+    for busqueda in busquedas_extremas:
+        productos = buscar_ofertas_ml(busqueda, access_token)
+        # Solo productos con descuento > 40% (mega ofertas)
+        productos_filtrados = [p for p in productos if p.get('descuento', 0) > 40]
+        productos_mega_descuento.extend(productos_filtrados)
+    
+    # Ordenar por descuento descendente
+    productos_mega_descuento.sort(key=lambda x: x.get('descuento', 0), reverse=True)
+    
+    return render_template("products.html", 
+                         products=productos_mega_descuento[:30], 
+                         total_products=len(productos_mega_descuento),
+                         filtered_count=len(productos_mega_descuento[:30]),
+                         current_filters={
+                             'descuento_min': 40,
+                             'descuento_max': 100,
+                             'precio': '',
+                             'categoria': 'mega-ofertas'
                          })
 
 # -------------------------------------------------
