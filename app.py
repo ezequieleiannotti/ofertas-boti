@@ -24,19 +24,38 @@ def is_development():
 # -------------------------------------------------
 @app.route("/")
 def home():
-    # Obtener TODOS los productos disponibles
+    # Verificar si tenemos access token
+    access_token = session.get("access_token")
+    
+    if not access_token:
+        # Si no hay token, mostrar página de login
+        if is_development():
+            redirect_uri = "http://localhost:5000/auth/callback"
+        else:
+            redirect_uri = PROD_REDIRECT_URI
+            
+        login_url = (
+            f"https://auth.mercadolibre.com.ar/authorization"
+            f"?response_type=code&client_id={CLIENT_ID}"
+            f"&redirect_uri={redirect_uri}"
+        )
+        return render_template("login_required.html", login_url=login_url)
+    
+    # Obtener productos con access token
     productos = get_all_products()
     
     # Aplicar filtros si existen
-    min_descuento = request.args.get('descuento', 0, type=int)
+    min_descuento = request.args.get('descuento_min', 0, type=int)
+    max_descuento = request.args.get('descuento_max', 100, type=int)
     max_precio = request.args.get('precio', 999999999, type=int)
     categoria = request.args.get('categoria', '')
     
     # Filtrar productos
     productos_filtrados = []
     for producto in productos:
-        # Filtro por descuento
-        if producto.get('descuento', 0) >= min_descuento:
+        # Filtro por descuento: rango entre min y max
+        producto_descuento = producto.get('descuento', 0)
+        if producto_descuento >= min_descuento and producto_descuento <= max_descuento:
             # Filtro por precio
             if producto.get('precio', 0) <= max_precio:
                 # Filtro por categoría
@@ -48,10 +67,26 @@ def home():
                          total_products=len(productos),
                          filtered_count=len(productos_filtrados),
                          current_filters={
-                             'descuento': min_descuento,
+                             'descuento_min': min_descuento,
+                             'descuento_max': max_descuento if max_descuento < 100 else '',
                              'precio': max_precio if max_precio < 999999999 else '',
                              'categoria': categoria
                          })
+
+@app.route("/login")
+def login_page():
+    # Usar redirect URI correcto según el entorno
+    if is_development():
+        redirect_uri = "http://localhost:5000/auth/callback"
+    else:
+        redirect_uri = PROD_REDIRECT_URI
+        
+    login_url = (
+        f"https://auth.mercadolibre.com.ar/authorization"
+        f"?response_type=code&client_id={CLIENT_ID}"
+        f"&redirect_uri={redirect_uri}"
+    )
+    return render_template("login_required.html", login_url=login_url)
 
 # -------------------------------------------------
 # Callback OAuth2
@@ -62,80 +97,206 @@ def auth_callback():
     if not code:
         return "No se recibió el código", 400
 
+    # Usar redirect URI correcto según el entorno
+    if is_development():
+        redirect_uri = "http://localhost:5000/auth/callback"
+    else:
+        redirect_uri = PROD_REDIRECT_URI
+
     data = {
         "grant_type": "authorization_code",
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
         "code": code,
-        "redirect_uri": PROD_REDIRECT_URI,
+        "redirect_uri": redirect_uri,
     }
 
-    response = requests.post("https://api.mercadolibre.com/oauth/token", data=data).json()
+    try:
+        response = requests.post("https://api.mercadolibre.com/oauth/token", data=data).json()
 
-    if "error" in response:
-        return f"Error obteniendo token: {response}"
+        if "error" in response:
+            return f"Error obteniendo token: {response}"
 
-    # Guardar tokens en sesión
-    session["access_token"] = response["access_token"]
-    session["refresh_token"] = response.get("refresh_token")
-
-    return redirect(url_for("home"))
+        # Guardar tokens en sesión
+        session["access_token"] = response["access_token"]
+        session["refresh_token"] = response.get("refresh_token")
+        
+        return redirect(url_for("home"))
+        
+    except Exception as e:
+        return f"Error en callback: {str(e)}"
 
 # -------------------------------------------------
 # Buscar ofertas reales (API pública)
 # -------------------------------------------------
 def get_all_products():
-    # Usar API alternativa que funciona - DummyJSON con productos reales
-    try:
-        productos_reales = []
+    # Usar API ORIGINAL de MercadoLibre con diferentes estrategias
+    access_token = session.get("access_token")
+    
+    # Búsquedas en MercadoLibre Argentina
+    busquedas = [
+        "celular", "smartphone", "iphone", "samsung", 
+        "notebook", "laptop", "tv", "smart tv",
+        "auriculares", "tablet", "playstation", "xbox"
+    ]
+    
+    todos_productos = []
+    
+    for busqueda in busquedas:
+        productos = buscar_ofertas_ml(busqueda, access_token)
+        if productos:
+            todos_productos.extend(productos)
+            print(f"Agregados {len(productos)} productos de '{busqueda}'")
         
-        # Obtener productos de diferentes categorías
-        categorias = [
-            "smartphones", "laptops", "fragrances", "skincare", 
-            "groceries", "home-decoration", "furniture", "tops",
-            "womens-dresses", "womens-shoes", "mens-shirts", "mens-shoes",
-            "mens-watches", "womens-watches", "womens-bags", "womens-jewellery",
-            "sunglasses", "automotive", "motorcycle", "lighting"
-        ]
-        
-        for categoria in categorias[:5]:  # Solo primeras 5 categorías
-            url = f"https://dummyjson.com/products/category/{categoria}"
-            response = requests.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                productos = data.get('products', [])
-                
-                for producto in productos:
-                    # Convertir a pesos argentinos (aprox)
-                    precio_usd = producto.get('price', 0)
-                    precio_ars = int(precio_usd * 350)  # Conversión aproximada
-                    
-                    # Calcular precio original con descuento
-                    descuento = producto.get('discountPercentage', 0)
-                    precio_original = None
-                    if descuento > 0:
-                        precio_original = int(precio_ars / (1 - descuento/100))
-                    
-                    productos_reales.append({
-                        "titulo": producto.get('title', 'Producto sin nombre'),
-                        "precio": precio_ars,
-                        "precio_original": precio_original,
-                        "descuento": int(descuento) if descuento else 0,
-                        "link": f"https://listado.mercadolibre.com.ar/{producto.get('title', '').lower().replace(' ', '-')}",
-                        "thumbnail": producto.get('thumbnail', 'https://via.placeholder.com/150')
-                    })
-        
-        print(f"Obtenidos {len(productos_reales)} productos reales")
-        
-        # Ordenar por descuento y precio
-        productos_reales.sort(key=lambda x: (x.get("descuento", 0), -x.get("precio", 0)), reverse=True)
-        
-        return productos_reales
-        
-    except Exception as e:
-        print(f"Error obteniendo productos: {e}")
+        # Si ya tenemos suficientes productos, parar
+        if len(todos_productos) >= 100:
+            break
+    
+    if not todos_productos:
+        print("No se pudieron obtener productos de MercadoLibre, usando fallback")
         return get_fallback_products()
+    
+    # Eliminar duplicados
+    productos_unicos = {}
+    for producto in todos_productos:
+        titulo_key = producto["titulo"][:40]
+        if titulo_key not in productos_unicos:
+            productos_unicos[titulo_key] = producto
+    
+    productos_finales = list(productos_unicos.values())
+    productos_finales.sort(key=lambda x: (x.get("descuento", 0), -x.get("precio", 0)), reverse=True)
+    
+    print(f"Total productos finales: {len(productos_finales)}")
+    return productos_finales
+
+def buscar_ofertas_ml(query, access_token=None):
+    """Buscar en MercadoLibre con diferentes estrategias para evitar 403"""
+    
+    # Estrategia 1: Con access token si existe
+    if access_token:
+        productos = intentar_busqueda_con_token(query, access_token)
+        if productos:
+            return productos
+    
+    # Estrategia 2: Sin autenticación pero con headers más completos
+    productos = intentar_busqueda_publica(query)
+    if productos:
+        return productos
+    
+    # Estrategia 3: Usando proxy/diferentes headers
+    productos = intentar_busqueda_alternativa(query)
+    if productos:
+        return productos
+    
+    print(f"Todas las estrategias fallaron para '{query}'")
+    return []
+
+def intentar_busqueda_con_token(query, access_token):
+    try:
+        url = "https://api.mercadolibre.com/sites/MLA/search"
+        params = {"q": query, "limit": 20}
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": "OfertasBot/1.0",
+            "Accept": "application/json"
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return procesar_resultados_ml(data.get("results", []))
+        else:
+            print(f"Error con token para '{query}': {response.status_code}")
+            return []
+            
+    except Exception as e:
+        print(f"Error en búsqueda con token: {e}")
+        return []
+
+def intentar_busqueda_publica(query):
+    try:
+        url = "https://api.mercadolibre.com/sites/MLA/search"
+        params = {"q": query, "limit": 20}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "es-AR,es;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "https://www.mercadolibre.com.ar/",
+            "Origin": "https://www.mercadolibre.com.ar"
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=15)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return procesar_resultados_ml(data.get("results", []))
+        else:
+            print(f"Error en búsqueda pública para '{query}': {response.status_code}")
+            return []
+            
+    except Exception as e:
+        print(f"Error en búsqueda pública: {e}")
+        return []
+
+def intentar_busqueda_alternativa(query):
+    try:
+        # Usar diferentes endpoints o parámetros
+        url = "https://api.mercadolibre.com/sites/MLA/search"
+        params = {
+            "q": query, 
+            "limit": 10,
+            "offset": 0,
+            "sort": "relevance"
+        }
+        headers = {
+            "User-Agent": "curl/7.68.0",
+            "Accept": "*/*"
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return procesar_resultados_ml(data.get("results", []))
+        else:
+            print(f"Error en búsqueda alternativa para '{query}': {response.status_code}")
+            return []
+            
+    except Exception as e:
+        print(f"Error en búsqueda alternativa: {e}")
+        return []
+
+def procesar_resultados_ml(results):
+    """Procesar resultados de MercadoLibre API"""
+    productos = []
+    
+    for item in results:
+        precio = item.get("price")
+        if not precio or precio <= 0:
+            continue
+            
+        original = item.get("original_price")
+        descuento = 0
+        
+        if precio and original and original > precio:
+            descuento = int(100 - (precio * 100 / original))
+        
+        thumbnail = item.get("thumbnail")
+        if thumbnail and thumbnail.startswith("http://"):
+            thumbnail = thumbnail.replace("http://", "https://")
+        
+        productos.append({
+            "titulo": item.get("title", "Sin título"),
+            "precio": int(precio),
+            "precio_original": int(original) if original else None,
+            "descuento": descuento,
+            "link": item.get("permalink", "#"),
+            "thumbnail": thumbnail or "https://via.placeholder.com/150"
+        })
+    
+    return productos
 
 def get_fallback_products():
     # Productos de respaldo si todo falla
@@ -248,32 +409,40 @@ def debug():
 
 @app.route("/test")
 def test_api():
-    # Test de la nueva API que funciona
-    try:
-        url = "https://dummyjson.com/products/category/smartphones"
-        response = requests.get(url, timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            productos = data.get('products', [])
-            
-            return {
-                "status_code": response.status_code,
-                "response_ok": True,
-                "productos_count": len(productos),
-                "sample_products": productos[:2] if productos else []
-            }
-        else:
-            return {
-                "status_code": response.status_code,
-                "response_ok": False,
-                "error": response.text[:200]
-            }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "status": "failed"
+    # Test de MercadoLibre API con diferentes estrategias
+    access_token = session.get("access_token")
+    
+    resultados = {
+        "access_token_exists": bool(access_token),
+        "estrategias": {}
+    }
+    
+    # Probar estrategia 1: Con token
+    if access_token:
+        productos = intentar_busqueda_con_token("iphone", access_token)
+        resultados["estrategias"]["con_token"] = {
+            "funciona": len(productos) > 0,
+            "productos_count": len(productos),
+            "sample": productos[:1] if productos else []
         }
+    
+    # Probar estrategia 2: Pública
+    productos = intentar_busqueda_publica("iphone")
+    resultados["estrategias"]["publica"] = {
+        "funciona": len(productos) > 0,
+        "productos_count": len(productos),
+        "sample": productos[:1] if productos else []
+    }
+    
+    # Probar estrategia 3: Alternativa
+    productos = intentar_busqueda_alternativa("iphone")
+    resultados["estrategias"]["alternativa"] = {
+        "funciona": len(productos) > 0,
+        "productos_count": len(productos),
+        "sample": productos[:1] if productos else []
+    }
+    
+    return resultados
 
 # -------------------------------------------------
 # Logout

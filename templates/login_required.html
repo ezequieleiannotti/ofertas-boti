@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Requerido - Ofertas Boti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .login-btn {
+            background: #3483fa;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .login-btn:hover {
+            background: #2968c8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 131, 250, 0.3);
+        }
+        
+        .why-login {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            text-align: left;
+        }
+        
+        .why-login h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .benefit {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            color: #555;
+        }
+        
+        .benefit-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .note {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 1rem;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔐</div>
+        <h1>Login Requerido</h1>
+        <p class="subtitle">
+            Para acceder a los productos reales de MercadoLibre necesitas autenticarte
+        </p>
+        
+        <div class="warning">
+            <strong>⚠️ API Bloqueada:</strong> MercadoLibre bloquea el acceso sin autenticación desde servidores. El login OAuth te da acceso completo a la API.
+        </div>
+        
+        <a href="{{ login_url }}" class="login-btn">
+            🛒 Ingresar con MercadoLibre
+        </a>
+        
+        <div class="why-login">
+            <h3>🎯 ¿Por qué necesito hacer login?</h3>
+            
+            <div class="benefit">
+                <span class="benefit-icon">✅</span>
+                <span>Acceso completo a productos reales de MercadoLibre</span>
+            </div>
+            
+            <div class="benefit">
+                <span class="benefit-icon">💰</span>
+                <span>Precios actualizados en tiempo real</span>
+            </div>
+            
+            <div class="benefit">
+                <span class="benefit-icon">🔥</span>
+                <span>Descuentos y ofertas reales</span>
+            </div>
+            
+            <div class="benefit">
+                <span class="benefit-icon">🔗</span>
+                <span>Links directos a productos específicos</span>
+            </div>
+            
+            <div class="benefit">
+                <span class="benefit-icon">🛡️</span>
+                <span>Acceso autorizado y seguro</span>
+            </div>
+        </div>
+        
+        <p class="note">
+            El login es seguro y solo se usa para acceder a la API pública de MercadoLibre. No guardamos tu información personal.
+        </p>
+    </div>
+</body>
+</html>

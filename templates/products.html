@@ -248,14 +248,21 @@
                 <div class="filter-row">
                     <div class="filter-group">
                         <label>Descuento mínimo (%)</label>
-                        <input type="number" name="descuento" value="{{ current_filters.descuento }}" min="0" max="100" placeholder="Ej: 20">
+                        <input type="number" name="descuento_min" value="{{ current_filters.descuento_min }}" min="0" max="100" placeholder="Ej: 10">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Descuento máximo (%)</label>
+                        <input type="number" name="descuento_max" value="{{ current_filters.descuento_max }}" min="0" max="100" placeholder="Ej: 30">
                     </div>
                     
                     <div class="filter-group">
                         <label>Precio máximo ($)</label>
                         <input type="number" name="precio" value="{{ current_filters.precio }}" min="0" placeholder="Ej: 100000">
                     </div>
-                    
+                </div>
+                
+                <div class="filter-row">
                     <div class="filter-group">
                         <label>Categoría</label>
                         <select name="categoria">
